@@ -45,12 +45,39 @@ export default function ExportButton({ targetRef, fileName = 'cv-export' }: Expo
     try {
       const html2canvas = (await import('html2canvas-pro')).default;
 
+      const overrides: { el: HTMLElement; overflow: string; height: string; maxHeight: string }[] = [];
+      let parent = el.parentElement;
+      while (parent) {
+        const style = getComputedStyle(parent);
+        if (style.overflow !== 'visible' || style.overflowY !== 'visible') {
+          overrides.push({
+            el: parent,
+            overflow: parent.style.overflow,
+            height: parent.style.height,
+            maxHeight: parent.style.maxHeight,
+          });
+          parent.style.overflow = 'visible';
+          parent.style.height = 'auto';
+          parent.style.maxHeight = 'none';
+        }
+        parent = parent.parentElement;
+      }
+
       const canvas = await html2canvas(el, {
         scale: resolution.scale,
         useCORS: true,
         allowTaint: true,
         backgroundColor: null,
         logging: false,
+        windowHeight: el.scrollHeight * resolution.scale,
+        height: el.scrollHeight,
+        width: el.scrollWidth,
+      });
+
+      overrides.forEach(({ el: e, overflow, height, maxHeight }) => {
+        e.style.overflow = overflow;
+        e.style.height = height;
+        e.style.maxHeight = maxHeight;
       });
 
       if (format === 'pdf') {
